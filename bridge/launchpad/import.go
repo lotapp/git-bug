@@ -23,7 +23,7 @@ func (li *launchpadImporter) Init(conf core.Configuration) error {
 const keyLaunchpadID = "launchpad-id"
 const keyLaunchpadLogin = "launchpad-login"
 
-func (li *launchpadImporter) makePerson(repo *cache.RepoCache, owner LPPerson) (*cache.IdentityCache, error) {
+func (li *launchpadImporter) ensurePerson(repo *cache.RepoCache, owner LPPerson) (*cache.IdentityCache, error) {
 	// Look first in the cache
 	i, err := repo.ResolveIdentityImmutableMetadata(keyLaunchpadLogin, owner.Login)
 	if err == nil {
@@ -58,14 +58,14 @@ func (li *launchpadImporter) ImportAll(repo *cache.RepoCache) error {
 	}
 
 	for _, lpBug := range lpBugs {
-		lpBugID := fmt.Sprintf("%d", lpBug.ID)
-		_, err := repo.ResolveBugCreateMetadata(keyLaunchpadID, lpBugID)
-		if err != nil && err != bug.ErrBugNotExist {
+		owner, err := li.ensurePerson(repo, lpBug.Owner)
+		if err != nil {
 			return err
 		}
 
-		owner, err := li.makePerson(repo, lpBug.Owner)
-		if err != nil {
+		lpBugID := fmt.Sprintf("%d", lpBug.ID)
+		_, err = repo.ResolveBugCreateMetadata(keyLaunchpadID, lpBugID)
+		if err != nil && err != bug.ErrBugNotExist {
 			return err
 		}
 
